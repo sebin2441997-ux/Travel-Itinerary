@@ -19,33 +19,41 @@ class LLMService:
         
         # Hugging Face Inference API setup
         self.use_huggingface = True  # Set to True to use HuggingFace free API
-        self.hf_api_url = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
-        self.hf_api_token = None  # Free tier works without token (with rate limits)
+
+        self.hf_api_token = Config.HF_TOKEN
+        self.hf_api_url = Config.HF_API_URL
+        self.hf_model = Config.HF_MODEL
         
         print(f"LLM Service initialized - Using HuggingFace: {self.use_huggingface}")
     
     def _generate_with_huggingface(self, prompt: str, max_length: int = 1024) -> str:
         """Generate text using Hugging Face Inference API"""
+       
         try:
-            headers = {"Content-Type": "application/json"}
-            if self.hf_api_token:
-                headers["Authorization"] = f"Bearer {self.hf_api_token}"
-            
-            payload = {
-                "inputs": prompt,
-                "parameters": {
-                    "max_new_tokens": max_length,
-                    "temperature": 0.7,
-                    "top_p": 0.9,
-                    "do_sample": True,
-                    "return_full_text": False
-                }
+            headers = {
+                "Authorization": f"Bearer {self.hf_api_token}",
+                "Content-Type": "application/json"
             }
+
+            payload = {
+                "model": self.hf_model,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                "max_tokens": max_length,
+                "temperature": 0.7,
+                "top_p": 0.9
+            }
+
             
             response = requests.post(self.hf_api_url, headers=headers, json=payload, timeout=60)
-            
+            print("RESPONSE!!!!!!!!!!", response)
             if response.status_code == 200:
                 result = response.json()
+                print("result", result)
                 if isinstance(result, list) and len(result) > 0:
                     return result[0].get("generated_text", "")
                 return str(result)
@@ -203,21 +211,14 @@ class LLMService:
         
         # Try HuggingFace API first if enabled
         if self.use_huggingface:
-            prompt = f"""Create a detailed travel itinerary for a trip to {preferences.get("destination", "Paris")} from {preferences.get("start_date", "")} to {preferences.get("end_date", "")}.
-
-Budget: {preferences.get("budget", "moderate")}
-Interests: {", ".join(preferences.get("interests", []))}
-Pace: {preferences.get("pace", "moderate")}
-
-Provide a day-by-day itinerary with morning, afternoon, and evening activities. Include specific timings, estimated costs, and travel tips for each day."""
-
-            result = self._generate_with_huggingface(prompt, max_length=1500)
+            print("I'm here!!!!!!!!!!!!!!!!!!!!!!!")
+            prompt = f"""Create a detailed travel itinerary for a trip to {preferences.get("destination", "Paris")} from {preferences.get("start_date", "")} to {preferences.get("end_date", "")}.Budget: {preferences.get("budget", "moderate")}Interests: {", ".join(preferences.get("interests", []))}Pace: {preferences.get("pace", "moderate")}Provide a day-by-day itinerary with morning, afternoon, and evening activities. Include specific timings, estimated costs, and travel tips for each day."""
+            print("prompt", prompt)
+            result = self._generate_with_huggingface(str(prompt), max_length=1500)
+            print("Result", result)
             if result:
                 # Format the response nicely
-                formatted = f"""# {preferences.get("destination", "Travel")} Itinerary
-**{preferences.get("start_date", "")} to {preferences.get("end_date", "")}**
-
-{result}
+                formatted = f"""# {preferences.get("destination", "Travel")} Itinerary**{preferences.get("start_date", "")} to {preferences.get("end_date", "")}**{result}
 
 ---
 **Generated using Mistral-7B via Hugging Face Inference API**
@@ -280,19 +281,7 @@ Provide a day-by-day itinerary with morning, afternoon, and evening activities. 
     
     def chat_refinement(self, message: str, conversation_history: list, trip_context: dict = None) -> str:
         """Handle conversational refinement of itinerary"""
-        
-        # Use mock responses if no API key configured
-        if self.use_mock:
-            responses = [
-                "That's a great question! Based on your itinerary, I'd recommend adjusting your schedule to allow more time for that activity.",
-                "I understand your concern. Let me suggest an alternative that might work better for your preferences.",
-                "Absolutely! I can help you modify the itinerary. What specific changes would you like to make?",
-                "That's a popular choice! I'd recommend booking tickets in advance to avoid long queues.",
-                "Great idea! Let me help you refine that part of your trip to make it even better."
-            ]
-            import random
-            return random.choice(responses) + f" (Demo mode - your message: '{message[:50]}...')"
-        
+         
         context = ""
         if trip_context:
             context = f"\nCurrent Trip Context: {trip_context}"
@@ -324,6 +313,17 @@ Provide a day-by-day itinerary with morning, afternoon, and evening activities. 
             return response.choices[0].message.content
         except Exception as e:
             return f"Error in chat: {str(e)}"
+        # Use mock responses if no API key configured
+        if self.use_mock:
+            responses = [
+                "That's a great question! Based on your itinerary, I'd recommend adjusting your schedule to allow more time for that activity.",
+                "I understand your concern. Let me suggest an alternative that might work better for your preferences.",
+                "Absolutely! I can help you modify the itinerary. What specific changes would you like to make?",
+                "That's a popular choice! I'd recommend booking tickets in advance to avoid long queues.",
+                "Great idea! Let me help you refine that part of your trip to make it even better."
+            ]
+            import random
+            return random.choice(responses) + f" (Demo mode - your message: '{message[:50]}...')"
     
     def extract_preferences_from_chat(self, conversation: str) -> dict:
         """Extract structured trip preferences from natural language conversation"""

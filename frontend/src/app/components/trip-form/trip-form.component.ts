@@ -44,6 +44,7 @@ export class TripFormComponent {
 
   onSubmit() {
     if (this.tripForm.valid) {
+      console.log("Inside Form submit", this.tripForm.value)
       this.formSubmit.emit(this.tripForm.value);
     }
   }

@@ -12,25 +12,26 @@ class ItineraryService:
         
         # Convert preferences to dict
         prefs_dict = preferences.dict()
-        
+        # print("Insided prefs_dict", prefs_dict)
         # Generate itinerary using LLM
         raw_itinerary = self.llm_service.generate_itinerary(prefs_dict)
-        
+        # print("Insided raw_itinerary", raw_itinerary)
         # Parse and structure the response
         structured_itinerary = self._parse_itinerary(raw_itinerary, preferences)
+        # print("Insided structured itinerary", structured_itinerary)
         
         return structured_itinerary
     
     def refine_itinerary(self, message: str, conversation_history: List[dict], 
                         trip_context: Dict = None) -> str:
         """Refine itinerary through conversation"""
-        
+        print("trip context", trip_context)
         response = self.llm_service.chat_refinement(
             message, 
             conversation_history, 
             trip_context
         )
-        
+        print("Refine Itinerary response", response)
         return response
     
     def _parse_itinerary(self, raw_text: str, preferences: TripPreferences) -> Dict:

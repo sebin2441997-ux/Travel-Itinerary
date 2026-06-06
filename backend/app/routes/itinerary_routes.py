@@ -17,8 +17,9 @@ def generate_itinerary():
     """Generate a new itinerary from preferences"""
     try:
         data = request.json
+        print("Data from frontend", data)
         preferences = TripPreferences(**data)
-        
+        print("preferences from frontend", preferences)
         itinerary = itinerary_service.create_itinerary(preferences)
         
         return jsonify({
@@ -27,6 +28,7 @@ def generate_itinerary():
         }), 200
         
     except Exception as e:
+        print("This is working")
         return jsonify({
             "success": False,
             "error": str(e)
