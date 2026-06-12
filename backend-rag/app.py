@@ -14,6 +14,7 @@ CORS(app, resources={
         "allow_headers": ["Content-Type"] 
     }
 })
+#checking linu
 
 # Initialize RAG service
 rag_service = RAGService()
