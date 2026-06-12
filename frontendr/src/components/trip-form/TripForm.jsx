@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import "./TripForm.css";
+import FullScreenLoader from "../loader/FullScreenLoader";
 
 const interestsList = [
     "Beaches",
@@ -13,13 +14,15 @@ const interestsList = [
 function TripForm({ onGenerate }) {
     const [tripData, setTripData] = useState({
         destination: "",
-        startDate: "",
-        endDate: "",
+        start_date: "",
+        end_date: "",
         budget: "",
         travelType: "",
         interests: [],
         notes: "",
     });
+
+    const [loading, steLoading] = useState(false);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -39,18 +42,34 @@ function TripForm({ onGenerate }) {
         }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
+        steLoading(true);
 
-        if (onGenerate) {
-            onGenerate(tripData);
+        try {
+            const response = await fetch('http://localhost:5000/api/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(tripData)
+            });
+            if (!response.ok) {
+                throw new Error(`Server error: ${response.statusText}`);
+            }
+            const data = await response.json();
+            console.log("Backend data", data);
+            onGenerate(data);
+            steLoading(false);
+        } catch (error) {
+            console.log("Failed to submit data ", error)
+            steLoading(false);
         }
-
-        console.log(tripData);
     };
 
     return (
         <section className="trip-form-section">
+            {loading && <FullScreenLoader/>}
             <div className="trip-form-container">
                 <h1>AI Travel Itinerary Assistant</h1>
                 <p>
@@ -75,7 +94,7 @@ function TripForm({ onGenerate }) {
                             <label>Start Date</label>
                             <input
                                 type="date"
-                                name="startDate"
+                                name="start_date"
                                 value={tripData.startDate}
                                 onChange={handleChange}
                                 required
@@ -86,7 +105,7 @@ function TripForm({ onGenerate }) {
                             <label>End Date</label>
                             <input
                                 type="date"
-                                name="endDate"
+                                name="end_date"
                                 value={tripData.endDate}
                                 onChange={handleChange}
                                 required
@@ -134,8 +153,8 @@ function TripForm({ onGenerate }) {
                                     type="button"
                                     key={interest}
                                     className={`interest-chip ${tripData.interests.includes(interest)
-                                            ? "active"
-                                            : ""
+                                        ? "active"
+                                        : ""
                                         }`}
                                     onClick={() => handleInterestToggle(interest)}
                                 >

@@ -8,6 +8,7 @@ import { AppComponent } from './app.component';
 import { TripFormComponent } from './components/trip-form/trip-form.component';
 import { ChatInterfaceComponent } from './components/chat-interface/chat-interface.component';
 import { ItineraryDisplayComponent } from './components/itinerary-display/itinerary-display.component';
+import { RagItineraryComponent } from './components/rag-itinerary/rag-itinerary.component';
 import { ApiService } from './services/api.service';
 
 @NgModule({
@@ -15,7 +16,8 @@ import { ApiService } from './services/api.service';
     AppComponent,
     TripFormComponent,
     ChatInterfaceComponent,
-    ItineraryDisplayComponent
+    ItineraryDisplayComponent,
+    RagItineraryComponent
   ],
   imports: [
     BrowserModule,

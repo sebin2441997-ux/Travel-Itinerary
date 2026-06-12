@@ -1,0 +1,155 @@
+<div class="rag-container">
+    <h1 class="page-title">📚 RAG-Enhanced Travel Itinerary</h1>
+    <p class="page-description">Upload travel guides and generate personalized itineraries based on your documents</p>
+
+    <!-- Navigation Tabs -->
+    <div class="tab-navigation">
+        <button class="tab-button" [class.active]="currentView === 'upload'" (click)="switchView('upload')">
+            📤 Upload Documents
+        </button>
+        <button class="tab-button" [class.active]="currentView === 'generate'" (click)="switchView('generate')">
+            ✨ Generate Itinerary
+        </button>
+        <button class="tab-button" [class.active]="currentView === 'search'" (click)="switchView('search')">
+            🔍 Search Documents
+        </button>
+    </div>
+
+    <!-- Document Status Bar -->
+    <div class="status-bar" *ngIf="uploadedDocuments.length > 0">
+        <div class="status-info">
+            <span class="status-label">📄 Documents:</span>
+            <span class="status-value">{{uploadedDocuments.length}}</span>
+            <span class="status-label">| Chunks:</span>
+            <span class="status-value">{{totalChunks}}</span>
+        </div>
+        <button class="btn-clear" (click)="clearAllDocuments()">🗑️ Clear All</button>
+    </div>
+
+    <!-- Upload View -->
+    <div class="content-section" *ngIf="currentView === 'upload'">
+        <div class="upload-card">
+            <h2>Upload Travel Documents</h2>
+            <p>Upload PDF files containing travel guides, destination information, or recommendations.</p>
+
+            <div class="file-upload-area">
+                <input type="file" accept=".pdf" (change)="onFileSelected($event)" id="fileInput" hidden>
+                <label for="fileInput" class="file-upload-label">
+                    <span class="upload-icon">📄</span>
+                    <span class="upload-text">Click to select PDF file</span>
+                </label>
+            </div>
+
+            <div class="upload-status" *ngIf="uploadMessage">
+                {{uploadMessage}}
+            </div>
+
+            <button class="btn-primary" [disabled]="!selectedFile || isUploading" (click)="uploadDocument()">
+                <span *ngIf="!isUploading">📤 Upload & Index Document</span>
+                <span *ngIf="isUploading">⏳ Processing...</span>
+            </button>
+
+            <div class="uploaded-docs" *ngIf="uploadedDocuments.length > 0">
+                <h3>Uploaded Documents:</h3>
+                <ul>
+                    <li *ngFor="let doc of uploadedDocuments">📑 {{doc}}</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generate View -->
+    <div class="content-section" *ngIf="currentView === 'generate'">
+        <div class="generate-card">
+            <h2>Generate RAG-Based Itinerary</h2>
+            <p *ngIf="uploadedDocuments.length === 0" class="warning-message">
+                ⚠️ No documents uploaded yet. Upload travel documents first for better results.
+            </p>
+
+            <form class="itinerary-form">
+                <div class="form-group">
+                    <label>Destination *</label>
+                    <input type="text" [(ngModel)]="destination" name="destination"
+                        placeholder="e.g., Paris, Tokyo, New York" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Start Date *</label>
+                        <input type="date" [(ngModel)]="startDate" name="startDate" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>End Date *</label>
+                        <input type="date" [(ngModel)]="endDate" name="endDate" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Budget</label>
+                    <select [(ngModel)]="budget" name="budget">
+                        <option value="budget">Budget</option>
+                        <option value="moderate">Moderate</option>
+                        <option value="luxury">Luxury</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Interests</label>
+                    <div class="interests-grid">
+                        <button type="button" *ngFor="let interest of availableInterests" class="interest-chip"
+                            [class.selected]="interests.includes(interest)" (click)="toggleInterest(interest)">
+                            {{interest}}
+                        </button>
+                    </div>
+                </div>
+
+                <button type="button" class="btn-primary btn-large"
+                    [disabled]="isGenerating || !destination || !startDate || !endDate" (click)="generateRAGItinerary()">
+                    <span *ngIf="!isGenerating">✨ Generate Itinerary with RAG</span>
+                    <span *ngIf="isGenerating">⏳ Generating...</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Search View -->
+    <div class="content-section" *ngIf="currentView === 'search'">
+        <div class="search-card">
+            <h2>Search Documents</h2>
+            <p>Search through your uploaded travel documents for specific information.</p>
+
+            <div class="search-box">
+                <input type="text" [(ngModel)]="searchQuery"
+                    placeholder="Search for destinations, activities, restaurants..." (keyup.enter)="searchDocuments()">
+                <button class="btn-search" [disabled]="isSearching || !searchQuery" (click)="searchDocuments()">
+                    🔍 Search
+                </button>
+            </div>
+
+            <div class="search-results" *ngIf="searchResults.length > 0">
+                <h3>Search Results:</h3>
+                <div class="result-card" *ngFor="let result of searchResults">
+                    <div class="result-source">📄 {{result.source}}</div>
+                    <div class="result-content">{{result.content}}</div>
+                </div>
+            </div>
+
+            <div class="no-results" *ngIf="searchResults.length === 0 && !isSearching && searchQuery">
+                No results found. Try different search terms.
+            </div>
+        </div>
+    </div>
+
+    <!-- Results View -->
+    <div class="content-section" *ngIf="currentView === 'results' && itinerary">
+        <div class="results-header">
+            <h2>Your RAG-Enhanced Itinerary</h2>
+            <button class="btn-secondary" (click)="resetForm()">
+                ➕ Create New Itinerary
+            </button>
+        </div>
+
+        <app-itinerary-display [itinerary]="itinerary"></app-itinerary-display>
+    </div>
+</div>

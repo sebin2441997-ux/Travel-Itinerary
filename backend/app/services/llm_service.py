@@ -285,6 +285,7 @@ class LLMService:
         context = ""
         if trip_context:
             context = f"\nCurrent Trip Context: {trip_context}"
+            print("Inside LLMService context", context)
         
         system_prompt = f"""You are a helpful travel assistant helping refine a travel itinerary. 
         You can answer questions, make adjustments, and provide additional recommendations.
@@ -328,16 +329,6 @@ class LLMService:
     def extract_preferences_from_chat(self, conversation: str) -> dict:
         """Extract structured trip preferences from natural language conversation"""
         
-        # Use mock extraction if no API key configured
-        if self.use_mock:
-            return """{
-            "destination": "Paris",
-            "start_date": "2026-06-15",
-            "end_date": "2026-06-20",
-            "budget": "moderate",
-            "interests": ["culture", "food", "history"],
-            "pace": "moderate"
-        }"""
         
         prompt = f"""Extract travel preferences from this conversation and return them in this exact JSON format:
         {{
@@ -366,3 +357,13 @@ class LLMService:
             return response.choices[0].message.content
         except Exception as e:
             return f"Error extracting preferences: {str(e)}"
+        # Use mock extraction if no API key configured
+        if self.use_mock:
+            return """{
+            "destination": "Paris",
+            "start_date": "2026-06-15",
+            "end_date": "2026-06-20",
+            "budget": "moderate",
+            "interests": ["culture", "food", "history"],
+            "pace": "moderate"
+        }"""

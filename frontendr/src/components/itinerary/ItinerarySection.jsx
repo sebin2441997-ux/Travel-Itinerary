@@ -2,6 +2,7 @@ import React from "react";
 import "./ItinerarySection.css";
 
 function ItinerarySection({ itinerary, loading }) {
+    console.log("Itinerary", itinerary)
     if (loading) {
         return (
             <section className="itinerary-section">
@@ -29,20 +30,20 @@ function ItinerarySection({ itinerary, loading }) {
 
                     <div className="trip-summary">
                         <span>
-                            📍 {itinerary.destination}
+                            📍 {itinerary.itinerary.destination}
                         </span>
 
                         <span>
-                            💰 ₹{itinerary.budget}
+                            🗓️ {itinerary.itinerary.duration}
                         </span>
 
                         <span>
-                            🗓️ {itinerary.days.length} Days
+                             {itinerary.itinerary.raw_itinerary} 
                         </span>
                     </div>
                 </div>
 
-                <div className="days-container">
+                {/* <div className="days-container">
                     {itinerary.days.map((day) => (
                         <div className="day-card" key={day.dayNumber}>
                             <div className="day-header">
@@ -69,7 +70,7 @@ function ItinerarySection({ itinerary, loading }) {
                             </div>
                         </div>
                     ))}
-                </div>
+                </div> */}
 
                 <div className="itinerary-actions">
                     <button className="action-btn">
