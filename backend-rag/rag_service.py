@@ -1,4 +1,5 @@
 import os
+import sys
 import tempfile
 import pickle
 import ssl
@@ -12,51 +13,33 @@ from langchain_community.vectorstores import FAISS
 from langchain.chains import RetrievalQA
 import httpx
 from config import Config
+from config import Config
 
-try:
-    from langchain_community.embeddings import HuggingFace
-    EmbeddingsEMBEDDINGS_AVAILABLE = True
-except ImportError:
-    EMBEDDINGS_AVAILABLE = True
+from tcs_embeddings import TCSGenAIEmbeddings
 
 class RAGService:
     def __init__(self):
-        # Initialize Local Embedding Model (no API key needed)
-        print("Loading local embedding model...")
+        # Initialize TCS GenAI Embedding Model (uses GenAI API)
+        print("Loading TCS GenAI embedding model...")
     
         self.embedding_model = None
         self.embeddings_available = False
     
-        # Try to load embedding model
-        if EMBEDDINGS_AVAILABLE:
-            try:
-                # Disable SSL verification for HuggingFace model download
-                ssl._create_default_https_context = ssl._create_unverified_context
-                
-                # Monkeypatch httpx for SSL
-                original_client_init = httpx.Client.__init__
-                def patched_init(self, *args, **kwargs):
-                    kwargs['verify'] = False
-                    return original_client_init(self, *args, **kwargs)
-                httpx.Client.__init__ = patched_init
-                
-                from langchain_community.embeddings import HuggingFaceEmbeddings
-                self.embedding_model = HuggingFaceEmbeddings(
-                    model_name="sentence-transformers/all-MiniLM-L6-v2",
-                    model_kwargs={'device': 'cpu'},
-                    encode_kwargs={'normalize_embeddings': True}
-                )
+        # Try to initialize TCS GenAI embeddings
+        try:
+            if Config.GENAI_API_KEY and Config.GENAI_API_KEY not in ["YOUR_KEY_HERE", "your_api_key_here", ""]:
+                self.embedding_model = TCSGenAIEmbeddings()
                 self.embeddings_available = True
-                print("✓ Local embedding model loaded successfully")
-            except Exception as e:
-                print(f"⚠ Could not load embedding model: {str(e)[:100]}...")
-                print("⚠ RAG document upload will be disabled until model is available.")
-                print("  This is likely due to corporate network restrictions.")
-                self.embedding_model = None
-        else:
-            print("⚠ HuggingFace embeddings not available")
+                print("✓ TCS GenAI embedding model initialized successfully")
+            else:
+                print("⚠ GenAI API key not configured")
+                print("⚠ RAG document upload will be disabled")
+        except Exception as e:
+            print(f"⚠ Could not initialize TCS GenAI embeddings: {str(e)}")
+            print("⚠ RAG document upload will be disabled")
+            self.embedding_model = None
        
-        # Check if GenAI API key is configured (only needed for LLM, not embeddings)
+        # Check if GenAI API key is configured (needed for both LLM and embeddings)
         self.use_llm = Config.GENAI_API_KEY and Config.GENAI_API_KEY not in ["YOUR_KEY_HERE", "your_api_key_here", ""]
        
         if self.use_llm:
@@ -101,20 +84,20 @@ class RAGService:
                     )
                     print(f"✓ Loaded existing FAISS vector store")
                 else:
-                    print("  No existing vector store found")
+                    print("  No existing vector store found")
             except Exception as e:
                 self.vectordb = None
-                print(f"  Could not load vector store: {e}")
+                print(f"  Could not load vector store: {e}")
         else:
-            print("  Vector store disabled (embeddings not available)")
+            print("  Vector store disabled (embeddings not available)")
 
     def upload_document(self, file_content: bytes, filename: str) -> Dict:
-        """Upload and index a PDF document using local embeddings"""
+        """Upload and index a PDF document using TCS GenAI embeddings"""
        
         if not self.embeddings_available:
             return {
                 "success": False,
-                "message": "Embedding model not available. Cannot index documents due to network restrictions. Please see documentation for manual model download.",
+                "message": "Embedding model not available. Please check GenAI API key configuration.",
                 "chunks_indexed": 0
             }
        
@@ -175,12 +158,13 @@ class RAGService:
            
         except Exception as e:
             print(f"Error uploading document: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return {
                 "success": False,
                 "message": f"Error: {str(e)}",
                 "chunks_indexed": 0
-            }
-        
+            }        
     def generate_rag_itinerary(self, preferences: Dict) -> str:
         """Generate itinerary using RAG with uploaded documents"""
        
